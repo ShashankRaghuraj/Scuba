@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scuba Browser</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- Main browser interface -->
+    <div id="browser-container">
+        <!-- Navigation bar -->
+        <nav id="nav-bar">
+            <div id="nav-controls">
+                <button id="back-btn" class="nav-btn" title="Go Back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                    </svg>
+                </button>
+                <button id="forward-btn" class="nav-btn" title="Go Forward">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </button>
+                <button id="refresh-btn" class="nav-btn" title="Refresh">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23,4 23,10 17,10"></polyline>
+                        <path d="M20.49,15a9,9,0,1,1-2.12-9.36L23,10"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Address bar -->
+            <div id="address-container">
+                <input 
+                    type="text" 
+                    id="address-bar" 
+                    placeholder="Search or enter a website..."
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+                <button id="go-btn" class="nav-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Menu button -->
+            <div id="menu-controls">
+                <button id="menu-btn" class="nav-btn" title="Menu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Tab bar -->
+        <div id="tab-bar">
+            <div id="tabs-container">
+                <!-- Tabs will be dynamically created by TabManager -->
+            </div>
+            <button id="new-tab-btn" class="nav-btn" title="New Tab">+</button>
+        </div>
+
+        <!-- Web content area -->
+        <div id="content-area">
+            <!-- Webviews will be dynamically created by WebviewManager -->
+            
+            <!-- Animated Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay hidden">
+                <div class="loading-content">
+                    <div class="swimming-animation">
+                        <div class="penguin">🐧</div>
+                        <div class="water-waves">
+                            <div class="wave wave-1">〰️</div>
+                            <div class="wave wave-2">〰️</div>
+                            <div class="wave wave-3">〰️</div>
+                        </div>
+                    </div>
+                    <div class="loading-text">
+                        <span id="loading-message">Penguins are swimming for the information...</span>
+                        <div class="loading-dots">
+                            <span class="dot">.</span>
+                            <span class="dot">.</span>
+                            <span class="dot">.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading-indicator">
+            <div class="loading-bar"></div>
+        </div>
+    </div>
+
+    <!-- Welcome screen for new tabs -->
+    <div id="welcome-screen" class="hidden">
+        <div class="welcome-content">
+            <h1>Scuba</h1>
+            <p>Simple. Clean. Fast.</p>
+            
+            <!-- Welcome screen search bar -->
+            <div class="welcome-search-container">
+                <input 
+                    type="text" 
+                    id="welcome-search-bar" 
+                    class="welcome-search-bar"
+                    placeholder="Search Google or type a URL"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+            </div>
+            
+            <!-- Simplified quick links -->
+            <div class="quick-links">
+                <a href="#" class="quick-link" data-url="https://www.google.com">Google</a>
+                <a href="#" class="quick-link" data-url="https://www.youtube.com">YouTube</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Component scripts -->
+    <script src="components/TabManager.js"></script>
+    <script src="components/WebviewManager.js"></script>
+    <script src="components/NavigationBar.js"></script>
+    <script src="components/UIManager.js"></script>
+    <script src="components/LoadingManager.js"></script>
+    <script src="components/App.js"></script>
+    
+    <!-- Main application script -->
+    <script src="renderer.js"></script>
+</body>
+</html>
