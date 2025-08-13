@@ -109,7 +109,19 @@ class NavigationBar {
         const url = addressBar.value.trim();
         if (!url) return;
 
-        this.emit('navigate-requested', { url });
+        // Check if it's a search query or URL
+        let finalUrl = url;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            if (url.includes(' ') || !url.includes('.')) {
+                // Treat as search query
+                finalUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+            } else {
+                // Treat as URL
+                finalUrl = 'https://' + url;
+            }
+        }
+
+        this.emit('navigate-requested', { url: finalUrl });
     }
 
     navigateFromWelcome() {
@@ -234,17 +246,12 @@ class NavigationBar {
         return url.replace(/^https?:\/\//, '');
     }
 
-    // Welcome screen management
+    // Welcome screen management (disabled - using search interface instead)
     showWelcomeScreen() {
+        // Disabled - we now use the search interface instead
         const welcomeScreen = document.getElementById('welcome-screen');
         if (welcomeScreen) {
-            welcomeScreen.classList.remove('hidden');
-            
-            // Focus on welcome search bar
-            const welcomeSearchBar = document.getElementById('welcome-search-bar');
-            if (welcomeSearchBar) {
-                setTimeout(() => welcomeSearchBar.focus(), 100);
-            }
+            welcomeScreen.classList.add('hidden');
         }
     }
 

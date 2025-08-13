@@ -9,6 +9,7 @@ class App {
         this.uiManager = null;
         this.loadingManager = null;
         this.performanceMonitor = null;
+        this.searchInterface = null;
         
         this.isInitialized = false;
         this.init();
@@ -38,6 +39,10 @@ class App {
             this.performanceMonitor = new PerformanceMonitor();
             console.log('PerformanceMonitor initialized');
 
+            // Initialize search interface
+            this.searchInterface = new SearchInterface();
+            console.log('SearchInterface initialized');
+
             // Connect loading manager to webview manager
             this.webviewManager.setLoadingManager(this.loadingManager);
 
@@ -61,6 +66,11 @@ class App {
     setupEventHandlers() {
         // UI Manager events
         this.uiManager.on('navigate-to-url', (data) => {
+            this.handleNavigateToUrl(data);
+        });
+
+        // Search Interface events
+        this.searchInterface.on('navigate-to-url', (data) => {
             this.handleNavigateToUrl(data);
         });
 
@@ -151,6 +161,7 @@ class App {
             console.log('App: Navigating existing tab to:', url);
             this.webviewManager.navigateWebview(activeTab.id, url);
             this.hideWelcomeScreen();
+            this.hideSearchInterface();
         } else {
             console.log('App: No active tab found, creating new tab with URL:', url);
             // Create new tab if none exists
@@ -168,11 +179,12 @@ class App {
                 webviewData.canGoForward
             );
             this.hideWelcomeScreen();
+            this.hideSearchInterface();
         } else {
-            // For empty tabs, clear address bar and show welcome screen
+            // For empty tabs, clear address bar and show search interface
             this.navigationBar.setUrl('');
             this.navigationBar.setNavigationState(false, false);
-            this.showWelcomeScreen();
+            this.showSearchInterface();
         }
     }
 
@@ -210,24 +222,22 @@ class App {
     }
 
     handleNoTabsRemaining() {
-        // Show welcome screen and reset window title
-        this.showWelcomeScreen();
+        // Automatically create a new tab instead of showing search interface
+        this.createNewTab();
         document.title = 'Scuba';
-        this.navigationBar.setUrl('');
-        this.navigationBar.setNavigationState(false, false);
     }
 
     // Tab management
     createInitialTab() {
-        // Check if we should show welcome screen or create a tab with URL
+        // Check if we should create a tab with URL or create an empty tab
         const urlParams = new URLSearchParams(window.location.search);
         const initialUrl = urlParams.get('url');
 
         if (initialUrl) {
             this.createNewTab(initialUrl);
         } else {
-            // Just show welcome screen, don't create an empty tab
-            this.showWelcomeScreen();
+            // Create an empty tab which will show the search interface
+            this.createNewTab();
         }
     }
 
@@ -236,9 +246,10 @@ class App {
         
         if (url) {
             this.hideWelcomeScreen();
+            this.hideSearchInterface();
         } else {
-            // For new empty tabs, show welcome screen and clear address bar
-            this.showWelcomeScreen();
+            // For new empty tabs, show search interface and clear address bar
+            this.showSearchInterface();
             this.navigationBar.setUrl('');
         }
 
@@ -259,6 +270,18 @@ class App {
 
     hideWelcomeScreen() {
         this.navigationBar.hideWelcomeScreen();
+    }
+
+    showSearchInterface() {
+        if (this.searchInterface) {
+            this.searchInterface.show();
+        }
+    }
+
+    hideSearchInterface() {
+        if (this.searchInterface) {
+            this.searchInterface.hide();
+        }
     }
 
     // Public API for external control
@@ -304,7 +327,8 @@ class App {
                 navigationBar: !!this.navigationBar,
                 uiManager: !!this.uiManager,
                 loadingManager: !!this.loadingManager,
-                performanceMonitor: !!this.performanceMonitor
+                performanceMonitor: !!this.performanceMonitor,
+                searchInterface: !!this.searchInterface
             },
             performance: this.performanceMonitor?.exportMetrics() || null
         };
@@ -340,6 +364,9 @@ class App {
         this.webviewManager = null;
         this.navigationBar = null;
         this.uiManager = null;
+        this.loadingManager = null;
+        this.performanceMonitor = null;
+        this.searchInterface = null;
         this.isInitialized = false;
     }
 }

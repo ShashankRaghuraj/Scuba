@@ -190,6 +190,12 @@ class WebviewManager {
         });
     }
 
+    hideAllWebviews() {
+        this.webviews.forEach((webviewData) => {
+            webviewData.element.classList.remove('active');
+        });
+    }
+
     navigateWebview(tabId, url) {
         const webviewData = this.webviews.get(tabId);
         if (!webviewData) return;
