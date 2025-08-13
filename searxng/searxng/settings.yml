@@ -48,8 +48,8 @@ server:
   max_request_timeout: 20.0
   # server limiter
   limiter: false  # rate limit the number of request on the instance, block some bots
-  # Secret key for securing sessions
-  secret_key: "scuba-browser-searxng-secret-key-2025"
+  # Secret key for securing sessions - SECURITY: Use environment variable
+  secret_key: "${SEARXNG_SECRET_KEY}"
 
 ui:
   # Custom static path - leave it blank if you didn't change

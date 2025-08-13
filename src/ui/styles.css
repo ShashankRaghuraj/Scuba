@@ -164,6 +164,62 @@ body::before {
     transform: translate3d(0, 0, 0) scale(0.95);
 }
 
+/* Custom window controls styling */
+.window-controls {
+    display: flex;
+    align-items: center;
+    -webkit-app-region: no-drag;
+}
+
+.app-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin-right: 20px;
+    -webkit-app-region: no-drag;
+}
+
+.title-bar-controls {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+    -webkit-app-region: no-drag;
+}
+
+.window-control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin-left: 2px;
+    -webkit-app-region: no-drag;
+}
+
+.window-control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 1);
+}
+
+.window-control-btn.close:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.window-control-btn.maximize:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.window-control-btn.minimize:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
 .nav-btn:disabled {
     color: #bdc1c6;
     cursor: not-allowed;

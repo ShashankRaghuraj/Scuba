@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Scuba Browser started successfully');
         
         // Optional: Show debug info in development
-        if (process.argv?.includes('--dev')) {
+        const isDev = window.scubaAPI?.getBrowserInfo?.()?.isDevelopment || false;
+        if (isDev) {
             console.log('Debug info:', app.debugInfo());
             
             // Add debug tools to window
@@ -79,7 +80,8 @@ window.addEventListener('error', (e) => {
     console.error('Application error:', e.error);
     
     // Only show user-facing errors in production
-    if (!process.argv?.includes('--dev')) {
+    const isDev = window.scubaAPI?.getBrowserInfo?.()?.isDevelopment || false;
+    if (!isDev) {
         showErrorMessage('An unexpected error occurred. Please try refreshing the page.');
     }
 });
@@ -136,7 +138,8 @@ function showErrorMessage(message) {
 }
 
 // Performance monitoring (development only)
-if (process.argv?.includes('--dev')) {
+const isDevelopment = window.scubaAPI?.getBrowserInfo?.()?.isDevelopment || false;
+if (isDevelopment) {
     // Monitor performance
     const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();

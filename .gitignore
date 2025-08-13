@@ -51,11 +51,45 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-
 # Electron
 dist_electron/
 
 # Cache
 .cache/
+
+# Security files (keep these ignored)
+.env
+*.key
+*.pem
+*.p12
+
+# Generated security files
+security-report.json
+audit-report.json
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE specific
+.vscode/settings.json
+.idea/workspace.xml
+
+# Browser specific
+# User data directories (if any get created during development)
+user-data/
+profile/
+session/
+
+# SearXNG specific
+searxng/logs/
+searxng/data/
+
+# Test files
+test-results/
+coverage-reports/
+
+# Backup files
+*.backup
+*.bak
+*~

@@ -86,16 +86,23 @@ class WebviewManager {
     }
 
     configureWebview(webview) {
+        // SECURITY: Enable all security features
         webview.setAttribute('enableremotemodule', 'false');
-        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true,preload=true,nodeIntegration=false');
-        webview.setAttribute('useragent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Scuba/1.0.0');
-        webview.setAttribute('disablewebsecurity', 'true');
-        webview.setAttribute('allowpopups', 'true');
+        webview.setAttribute('webpreferences', 'nodeIntegration=false,contextIsolation=true,enableRemoteModule=false,webSecurity=true,allowRunningInsecureContent=false,experimentalFeatures=false,v8CacheOptions=code,backgroundThrottling=false');
+        webview.setAttribute('useragent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Scuba/1.0.0');
+        
+        // SECURITY: Keep web security enabled (removed disablewebsecurity)
+        webview.setAttribute('allowpopups', 'false'); // Block popups by default
         webview.setAttribute('preload', '');
-        webview.setAttribute('httpreferrer', '');
-        webview.setAttribute('useragentoverride', '');
-        // Enable aggressive caching and preloading
-        webview.setAttribute('partition', 'persist:scuba-session');
+        webview.setAttribute('httpreferrer', 'no-referrer-when-downgrade');
+        
+        // Use isolated session for better security
+        webview.setAttribute('partition', 'persist:scuba-isolated-session');
+        
+        // Additional security attributes
+        webview.setAttribute('nodeintegrationinsubframes', 'false');
+        webview.setAttribute('plugins', 'false');
+        webview.setAttribute('javascript', 'true'); // Keep JS enabled for web functionality
     }
 
     applyWebviewStyles(webview) {

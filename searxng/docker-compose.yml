@@ -9,6 +9,7 @@ services:
       - ./searxng:/etc/searxng:rw
     environment:
       - SEARXNG_BASE_URL=http://localhost:8080/
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:-scuba-browser-searxng-secret-key-2025-default}
     cap_drop:
       - ALL
     cap_add:

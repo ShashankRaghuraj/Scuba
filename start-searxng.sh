@@ -4,6 +4,32 @@
 
 echo "🐧 Starting SearXNG for Scuba Browser..."
 
+# Security: Check for environment file
+if [ ! -f ".env" ]; then
+    echo "⚠️  No .env file found. Creating from template..."
+    if [ -f "env.example" ]; then
+        cp env.example .env
+        echo "📄 Created .env file from template"
+        echo "🔑 IMPORTANT: Edit .env and change SEARXNG_SECRET_KEY to a secure value!"
+        echo "💡 Generate a secure key with: openssl rand -base64 32"
+    else
+        echo "❌ No env.example template found"
+    fi
+fi
+
+# Load environment variables
+if [ -f ".env" ]; then
+    echo "🔧 Loading environment variables..."
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+# Security: Validate secret key
+if [ -z "$SEARXNG_SECRET_KEY" ] || [ "$SEARXNG_SECRET_KEY" = "your-secure-random-secret-key-here-change-this" ]; then
+    echo "🚨 WARNING: Using default or empty SEARXNG_SECRET_KEY!"
+    echo "🔐 Please set a secure secret key in .env file"
+    echo "💡 Generate one with: openssl rand -base64 32"
+fi
+
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
     echo "❌ Docker is not running. Please start Docker Desktop first."
