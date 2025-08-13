@@ -1,6 +1,8 @@
-# 🐧 Scuba Browser
+# 🐧 Scuba Browser [0 -> 1 project, this is still in very very very very very very very early stages (very)]
 
 Shashank's Cool Browser, The Browser... the Movie? No just the Browser...
+
+https://github.com/user-attachments/assets/fe1b4dae-0eba-409b-976c-deb978035a02
 
 ## ✨ Features
 
