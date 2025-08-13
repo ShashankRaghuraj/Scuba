@@ -136,8 +136,13 @@ class NavigationBar {
         // Check if it's a search query or URL
         if (!query.startsWith('http://') && !query.startsWith('https://')) {
             if (query.includes(' ') || !query.includes('.')) {
-                // Treat as search query
-                url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                // Treat as search query - use SearchEngineManager
+                if (window.scuba && window.scuba.searchEngineManager) {
+                    url = window.scuba.searchEngineManager.generateSearchUrl(query);
+                } else {
+                    // Fallback to Google
+                    url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                }
             } else {
                 // Treat as URL
                 url = 'https://' + query;

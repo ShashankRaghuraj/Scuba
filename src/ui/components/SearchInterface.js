@@ -40,6 +40,7 @@ class SearchInterface {
                         autocomplete="off"
                         spellcheck="false"
                     >
+
                 </div>
                 
                 <div class="search-shortcuts">
@@ -92,31 +93,56 @@ class SearchInterface {
                 }
             }
         });
+
+
     }
 
     performSearch() {
         if (!this.currentQuery.trim()) return;
         
         const query = this.currentQuery.trim();
-        let url = query;
-        
-        // Check if it's a search query or URL
-        if (!query.startsWith('http://') && !query.startsWith('https://')) {
-            if (query.includes(' ') || !query.includes('.')) {
-                // Treat as search query
-                url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-            } else {
-                // Treat as URL
-                url = 'https://' + query;
-            }
-        }
         
         // Add to recent searches
         this.addToRecentSearches(query);
         
-        // Navigate to the URL
+        // Check if it's a URL
+        if (query.startsWith('http://') || query.startsWith('https://')) {
+            // Always navigate for URLs
+            this.navigateToUrl(query);
+            return;
+        }
+        
+        // Check if it looks like a domain
+        if (!query.includes(' ') && query.includes('.')) {
+            // Navigate to URL
+            this.navigateToUrl('https://' + query);
+            return;
+        }
+        
+        // Use SearchResultsUI for card-based results
+        if (window.scuba && window.scuba.searchResultsUI) {
+            // Hide search interface first
+            this.hide();
+            // Use performSearch which handles loading screen properly
+            window.scuba.searchResultsUI.performSearch(query);
+        } else {
+            // Fallback to browser search
+            this.performBrowserSearch(query);
+        }
+    }
+
+    performBrowserSearch(query) {
+        let url;
+        if (window.scuba && window.scuba.searchEngineManager) {
+            url = window.scuba.searchEngineManager.generateSearchUrl(query);
+        } else {
+            // Fallback to Google
+            url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        }
         this.navigateToUrl(url);
     }
+
+
 
     navigateToUrl(url) {
         // Hide search interface

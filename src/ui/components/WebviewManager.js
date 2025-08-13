@@ -62,8 +62,12 @@ class WebviewManager {
         if (this.activeWebviewId === tabId || !this.activeWebviewId) {
             this.activeWebviewId = tabId;
             webview.classList.add('active');
+            webview.style.visibility = 'visible';
+            webview.style.zIndex = '10';
             console.log('WebviewManager: Set active webview to:', tabId);
         } else {
+            webview.style.visibility = 'hidden';
+            webview.style.zIndex = '1';
             console.log('WebviewManager: Created webview for tab', tabId, 'but not setting as active (activeWebviewId:', this.activeWebviewId, ')');
         }
 
@@ -73,6 +77,9 @@ class WebviewManager {
             requestAnimationFrame(() => {
                 this.navigateWebview(tabId, url);
             });
+        } else {
+            // For empty tabs, preload common resources
+            this.preloadCommonResources(webview);
         }
 
         return webview;
@@ -80,14 +87,15 @@ class WebviewManager {
 
     configureWebview(webview) {
         webview.setAttribute('enableremotemodule', 'false');
-        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true');
+        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true,preload=true,nodeIntegration=false');
         webview.setAttribute('useragent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Scuba/1.0.0');
         webview.setAttribute('disablewebsecurity', 'true');
         webview.setAttribute('allowpopups', 'true');
         webview.setAttribute('preload', '');
         webview.setAttribute('httpreferrer', '');
         webview.setAttribute('useragentoverride', '');
-        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true');
+        // Enable aggressive caching and preloading
+        webview.setAttribute('partition', 'persist:scuba-session');
     }
 
     applyWebviewStyles(webview) {
@@ -107,6 +115,31 @@ class WebviewManager {
         webview.style.setProperty('right', '0', 'important');
         webview.style.setProperty('bottom', '0', 'important');
         webview.style.setProperty('z-index', '1', 'important');
+    }
+
+    preloadCommonResources(webview) {
+        // Preload common resources to improve performance
+        webview.addEventListener('dom-ready', () => {
+            try {
+                // Preload common web fonts and resources
+                webview.executeJavaScript(`
+                    // Preload common resources
+                    const link = document.createElement('link');
+                    link.rel = 'dns-prefetch';
+                    link.href = '//fonts.googleapis.com';
+                    document.head.appendChild(link);
+                    
+                    // Enable resource caching
+                    if ('serviceWorker' in navigator) {
+                        // Basic service worker for caching
+                    }
+                `).catch(() => {
+                    // Ignore errors in preloading
+                });
+            } catch (error) {
+                // Ignore preloading errors
+            }
+        }, { once: true });
     }
 
     setupWebviewEvents(webview, tabId) {
@@ -164,30 +197,34 @@ class WebviewManager {
     switchWebview(tabId, previousTabId) {
         console.log('WebviewManager: Switching webview from', previousTabId, 'to', tabId);
         
-        // Batch DOM operations for better performance
-        requestAnimationFrame(() => {
-            // Hide previous webview
-            if (previousTabId && this.webviews.has(previousTabId)) {
-                const previousWebview = this.webviews.get(previousTabId);
-                previousWebview.element.classList.remove('active');
-            }
+        // Use immediate DOM operations for instant switching
+        // Hide previous webview
+        if (previousTabId && this.webviews.has(previousTabId)) {
+            const previousWebview = this.webviews.get(previousTabId);
+            previousWebview.element.classList.remove('active');
+            // Use visibility for faster switching while keeping layout
+            previousWebview.element.style.visibility = 'hidden';
+            previousWebview.element.style.zIndex = '1';
+        }
 
-            // Show current webview if it exists
-            const currentWebview = this.webviews.get(tabId);
-            if (currentWebview) {
-                currentWebview.element.classList.add('active');
-                this.activeWebviewId = tabId;
-                console.log('WebviewManager: Active webview set to:', this.activeWebviewId);
-                
-                // Update navigation state
-                this.updateNavigationState(tabId);
-            } else {
-                // Webview doesn't exist yet, but we should still update activeWebviewId
-                // so that when it's created, it will be set as active
-                console.log('WebviewManager: No webview found for tab', tabId, '- will be created as active');
-                this.activeWebviewId = tabId;
-            }
-        });
+        // Show current webview if it exists
+        const currentWebview = this.webviews.get(tabId);
+        if (currentWebview) {
+            currentWebview.element.classList.add('active');
+            // Immediate visibility for instant switching
+            currentWebview.element.style.visibility = 'visible';
+            currentWebview.element.style.zIndex = '10';
+            this.activeWebviewId = tabId;
+            console.log('WebviewManager: Active webview set to:', this.activeWebviewId);
+            
+            // Update navigation state immediately
+            this.updateNavigationState(tabId);
+        } else {
+            // Webview doesn't exist yet, but we should still update activeWebviewId
+            // so that when it's created, it will be set as active
+            console.log('WebviewManager: No webview found for tab', tabId, '- will be created as active');
+            this.activeWebviewId = tabId;
+        }
     }
 
     hideAllWebviews() {
@@ -216,7 +253,13 @@ class WebviewManager {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             // Check if it looks like a search query
             if (url.includes(' ') || !url.includes('.')) {
-                url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+                // Use SearchEngineManager if available
+                if (window.scuba && window.scuba.searchEngineManager) {
+                    url = window.scuba.searchEngineManager.generateSearchUrl(url);
+                } else {
+                    // Fallback to Google
+                    url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+                }
             } else {
                 url = 'https://' + url;
             }

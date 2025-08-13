@@ -124,17 +124,23 @@ class TabManager {
     }
 
     updateTabUI() {
-        // Batch DOM operations for better performance
-        requestAnimationFrame(() => {
-            // Remove active class from all tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Add active class to current tab
-            const activeTab = this.tabs.get(this.activeTabId);
-            if (activeTab) {
-                activeTab.element.classList.add('active');
+        // Immediate DOM operations for instant feedback
+        const allTabs = document.querySelectorAll('.tab');
+        const activeTab = this.tabs.get(this.activeTabId);
+        
+        // Batch all DOM changes together
+        allTabs.forEach(tab => {
+            const isActive = activeTab && tab === activeTab.element;
+            tab.classList.toggle('active', isActive);
+            
+            // Add subtle visual feedback for active tab
+            if (isActive) {
+                tab.style.transform = 'scale(1.02)';
+                tab.style.transition = 'all 0.15s cubic-bezier(0.4, 0.0, 0.2, 1)';
+                // Reset after animation
+                setTimeout(() => {
+                    tab.style.transform = '';
+                }, 150);
             }
         });
     }

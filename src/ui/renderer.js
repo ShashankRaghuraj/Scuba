@@ -30,12 +30,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     tabs: app.tabManager,
                     webviews: app.webviewManager,
                     navigation: app.navigationBar,
-                    ui: app.uiManager
+                    ui: app.uiManager,
+                    loading: app.loadingManager,
+                    performance: app.performanceMonitor,
+                    search: app.searchInterface,
+                    searchEngine: app.searchEngineManager,
+                    searchResults: app.searchResultsUI
                 },
                 info: () => app.debugInfo(),
                 navigate: (url) => app.navigate(url),
                 newTab: (url) => app.newTab(url),
-                closeTab: (id) => app.closeTab(id)
+                closeTab: (id) => app.closeTab(id),
+                searchEngines: () => app.searchEngineManager?.getAvailableEngines() || [],
+                setSearchEngine: (engine) => app.searchEngineManager?.setEngine(engine),
+                testSearch: async (query) => {
+                    if (app.searchEngineManager) {
+                        try {
+                            return await app.searchEngineManager.handleSearchRequest(query, { returnResults: true });
+                        } catch (error) {
+                            console.error('Search test failed:', error);
+                            return null;
+                        }
+                    }
+                }
             };
             
             console.log('Debug tools available at window.debug');

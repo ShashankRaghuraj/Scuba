@@ -10,6 +10,9 @@ class App {
         this.loadingManager = null;
         this.performanceMonitor = null;
         this.searchInterface = null;
+        this.searchEngineManager = null;
+        this.searchResultsUI = null;
+        this.searchResultsInstances = new Map(); // Per-tab search results
         
         this.isInitialized = false;
         this.init();
@@ -39,9 +42,20 @@ class App {
             this.performanceMonitor = new PerformanceMonitor();
             console.log('PerformanceMonitor initialized');
 
+            // Initialize search engine manager
+            this.searchEngineManager = new SearchEngineManager();
+            console.log('SearchEngineManager initialized');
+
+            // Initialize search results UI
+            this.searchResultsUI = new SearchResultsUI();
+            console.log('SearchResultsUI initialized');
+
             // Initialize search interface
             this.searchInterface = new SearchInterface();
             console.log('SearchInterface initialized');
+
+            // Auto-detect best search engine
+            await this.searchEngineManager.autoDetectEngine();
 
             // Connect loading manager to webview manager
             this.webviewManager.setLoadingManager(this.loadingManager);
@@ -72,6 +86,33 @@ class App {
         // Search Interface events
         this.searchInterface.on('navigate-to-url', (data) => {
             this.handleNavigateToUrl(data);
+        });
+
+        // Search Engine Manager events
+        document.addEventListener('search-navigation-requested', (e) => {
+            this.handleNavigateToUrl({ url: e.detail.url });
+        });
+
+        document.addEventListener('search-engine-changed', (e) => {
+            console.log('App: Search engine changed to:', e.detail.engine);
+        });
+
+        // Search Results UI events
+        document.addEventListener('show-search-interface', () => {
+            this.showSearchInterface();
+        });
+
+        document.addEventListener('hide-search-interface', () => {
+            this.hideSearchInterface();
+        });
+
+        document.addEventListener('hide-welcome-screen', () => {
+            this.hideWelcomeScreen();
+        });
+
+        // Handle navigation from search results
+        document.addEventListener('navigate-to-url', (e) => {
+            this.handleNavigateToUrl({ url: e.detail.url });
         });
 
         this.uiManager.on('go-back', () => {
@@ -107,6 +148,12 @@ class App {
             // TabManager and WebviewManager communicate directly
             // App can listen for additional coordination if needed
             
+            // Create SearchResultsUI instance for this tab
+            if (data.tabId) {
+                const searchResultsUI = new SearchResultsUI(data.tabId);
+                this.searchResultsInstances.set(data.tabId, searchResultsUI);
+            }
+            
             // Optimize performance after tab creation
             if (this.performanceMonitor) {
                 this.performanceMonitor.optimizeTabSwitching();
@@ -115,10 +162,36 @@ class App {
 
         this.tabManager.on('tab-switched', (data) => {
             this.handleTabSwitched(data);
+            
+            // Switch active SearchResultsUI instance
+            if (data.tabId && this.searchResultsInstances.has(data.tabId)) {
+                // Hide all search results
+                this.searchResultsInstances.forEach((instance) => {
+                    if (instance.tabId !== data.tabId) {
+                        instance.hide();
+                    }
+                });
+                
+                // Update current instance reference
+                this.searchResultsUI = this.searchResultsInstances.get(data.tabId);
+            }
         });
 
         this.tabManager.on('no-tabs-remaining', () => {
             this.handleNoTabsRemaining();
+        });
+
+        this.tabManager.on('tab-closed', (data) => {
+            // Clean up SearchResultsUI instance for closed tab
+            if (data.tabId && this.searchResultsInstances.has(data.tabId)) {
+                const instance = this.searchResultsInstances.get(data.tabId);
+                instance.hide();
+                // Remove the DOM element
+                if (instance.resultsContainer && instance.resultsContainer.parentNode) {
+                    instance.resultsContainer.parentNode.removeChild(instance.resultsContainer);
+                }
+                this.searchResultsInstances.delete(data.tabId);
+            }
         });
 
         // Webview Manager events
@@ -244,6 +317,15 @@ class App {
     createNewTab(url = null) {
         const tabId = this.tabManager.createTab(url);
         
+        // Ensure SearchResultsUI instance exists for this tab
+        if (tabId && !this.searchResultsInstances.has(tabId)) {
+            const searchResultsUI = new SearchResultsUI(tabId);
+            this.searchResultsInstances.set(tabId, searchResultsUI);
+            
+            // Set as current instance if this is the active tab
+            this.searchResultsUI = searchResultsUI;
+        }
+        
         if (url) {
             this.hideWelcomeScreen();
             this.hideSearchInterface();
@@ -328,7 +410,9 @@ class App {
                 uiManager: !!this.uiManager,
                 loadingManager: !!this.loadingManager,
                 performanceMonitor: !!this.performanceMonitor,
-                searchInterface: !!this.searchInterface
+                searchInterface: !!this.searchInterface,
+                searchEngineManager: !!this.searchEngineManager,
+                searchResultsUI: !!this.searchResultsUI
             },
             performance: this.performanceMonitor?.exportMetrics() || null
         };
@@ -367,6 +451,20 @@ class App {
         this.loadingManager = null;
         this.performanceMonitor = null;
         this.searchInterface = null;
+        this.searchEngineManager = null;
+        this.searchResultsUI = null;
+        
+        // Clean up all search results instances
+        if (this.searchResultsInstances) {
+            this.searchResultsInstances.forEach((instance) => {
+                instance.hide();
+                if (instance.resultsContainer && instance.resultsContainer.parentNode) {
+                    instance.resultsContainer.parentNode.removeChild(instance.resultsContainer);
+                }
+            });
+            this.searchResultsInstances.clear();
+        }
+        
         this.isInitialized = false;
     }
 }
