@@ -120,11 +120,20 @@ class SearchInterface {
         }
         
         // Use SearchResultsUI for card-based results
-        if (window.scuba && window.scuba.searchResultsUI) {
-            // Hide search interface first
-            this.hide();
-            // Use performSearch which handles loading screen properly
-            window.scuba.searchResultsUI.performSearch(query);
+        if (window.scuba) {
+            // Get the current tab's SearchResultsUI instance
+            const currentTabId = window.scuba.tabManager?.activeTabId;
+            const searchResultsUI = window.scuba.searchResultsInstances?.get(currentTabId) || window.scuba.searchResultsUI;
+            
+            if (searchResultsUI) {
+                // Hide search interface first
+                this.hide();
+                // Use performSearch which handles loading screen properly
+                searchResultsUI.performSearch(query);
+            } else {
+                // Fallback to browser search
+                this.performBrowserSearch(query);
+            }
         } else {
             // Fallback to browser search
             this.performBrowserSearch(query);

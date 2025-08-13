@@ -150,8 +150,19 @@ class App {
             
             // Create SearchResultsUI instance for this tab
             if (data.tabId) {
+                console.log(`Creating SearchResultsUI for new tab ${data.tabId}`);
                 const searchResultsUI = new SearchResultsUI(data.tabId);
                 this.searchResultsInstances.set(data.tabId, searchResultsUI);
+                
+                // Ensure this new tab starts fresh - hide all other search results
+                this.searchResultsInstances.forEach((instance, tabId) => {
+                    if (tabId !== data.tabId) {
+                        instance.hide();
+                    }
+                });
+                
+                // Set as current instance for this new tab
+                this.searchResultsUI = searchResultsUI;
             }
             
             // Optimize performance after tab creation
@@ -161,19 +172,50 @@ class App {
         });
 
         this.tabManager.on('tab-switched', (data) => {
+            console.log(`Switching to tab ${data.tabId}`);
             this.handleTabSwitched(data);
             
             // Switch active SearchResultsUI instance
             if (data.tabId && this.searchResultsInstances.has(data.tabId)) {
-                // Hide all search results
+                // Hide ALL search results first
                 this.searchResultsInstances.forEach((instance) => {
-                    if (instance.tabId !== data.tabId) {
-                        instance.hide();
-                    }
+                    instance.hide();
                 });
                 
                 // Update current instance reference
-                this.searchResultsUI = this.searchResultsInstances.get(data.tabId);
+                const newInstance = this.searchResultsInstances.get(data.tabId);
+                this.searchResultsUI = newInstance;
+                
+                console.log(`Tab ${data.tabId} hasSearched: ${newInstance.hasSearched}, currentResults: ${!!newInstance.currentResults}`);
+                
+                // If this tab has search results, show them
+                if (newInstance.hasSearched && newInstance.currentResults) {
+                    console.log(`Showing search results for tab ${data.tabId}`);
+                    newInstance.show();
+                    // Update window title to reflect the search query
+                    if (newInstance.currentQuery) {
+                        document.title = `${newInstance.currentQuery} - Scuba`;
+                    }
+                } else {
+                    console.log(`Showing search interface for empty tab ${data.tabId}`);
+                    // Show search interface for empty tab
+                    if (this.searchInterface) {
+                        this.searchInterface.show();
+                    }
+                    // Update window title for new tab
+                    document.title = 'Scuba';
+                }
+            } else {
+                console.log(`No SearchResultsUI instance found for tab ${data.tabId}, showing search interface`);
+                // If no SearchResultsUI instance exists, hide all and show search interface
+                this.searchResultsInstances.forEach((instance) => {
+                    instance.hide();
+                });
+                if (this.searchInterface) {
+                    this.searchInterface.show();
+                }
+                // Update window title for new tab
+                document.title = 'Scuba';
             }
         });
 

@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Make app globally accessible for debugging
         window.scuba = app;
         
+        // Add direct reference to search results instances for easier access
+        window.scuba.searchResultsInstances = app.searchResultsInstances;
+        
         console.log('Scuba Browser started successfully');
         
         // Optional: Show debug info in development

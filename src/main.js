@@ -6,6 +6,8 @@ let mainWindow;
 function createWindow() {
   console.log('Creating window...');
   
+  const iconPath = path.join(__dirname, 'ui', 'icon.png');
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -13,6 +15,7 @@ function createWindow() {
     minHeight: 600,
     frame: false, // Remove default title bar for browser-like look
     titleBarStyle: 'hidden', // Hide title bar but keep traffic lights on macOS
+    icon: iconPath, // Set custom icon
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

@@ -1263,6 +1263,31 @@ body::before {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.category-tab.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.category-tab.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 
 
 .category-icon {
@@ -1430,6 +1455,59 @@ body::before {
     will-change: transform;
     /* Prevent layout thrashing */
     isolation: isolate;
+}
+
+/* Wikipedia Card Special Styling */
+.search-result-card.wikipedia-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 255, 0.95) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.search-result-card.wikipedia-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3B82F6, #1D4ED8, #2563EB);
+    z-index: 1;
+}
+
+.wikipedia-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.wikipedia-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1D4ED8;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.wikipedia-badge svg {
+    width: 16px;
+    height: 16px;
+    stroke: #1D4ED8;
+}
+
+.search-result-card.wikipedia-card:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 255, 0.98) 100%);
 }
 
 @keyframes slideInUp {

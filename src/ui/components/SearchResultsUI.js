@@ -9,7 +9,16 @@ class SearchResultsUI {
         this.currentCategory = 'general'; // Default category
         this.tabId = tabId || Date.now(); // Unique identifier
         this.categoryResults = new Map(); // Store results per category
+        this.processedResults = new Map(); // Store processed/rendered results per category
+        
+        // Tab-specific state - ensure completely clean state
+        this.isInitialized = false;
+        this.hasSearched = false;
+        
+        // Initialize with clean state
         this.init();
+        
+        console.log(`SearchResultsUI created for tab ${this.tabId} with clean state`);
     }
 
     init() {
@@ -142,11 +151,12 @@ class SearchResultsUI {
             }
         });
 
-        // Category tab switching
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.category-tab') && this.isVisible) {
+        // Category tab switching - only for this specific instance
+        this.resultsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.category-tab')) {
                 const categoryTab = e.target.closest('.category-tab');
                 const category = categoryTab.dataset.category;
+                console.log(`📱 Category tab clicked in tab ${this.tabId}: ${category}`);
                 this.switchCategory(category);
             }
         });
@@ -189,10 +199,16 @@ class SearchResultsUI {
         });
     }
 
-    showLoading() {
+    showLoading(message = 'Searching across multiple engines...') {
         const loading = this.resultsContainer.querySelector('.search-results-loading');
         const error = this.resultsContainer.querySelector('.search-results-error');
         const grid = this.resultsContainer.querySelector('.search-results-grid');
+        
+        // Update loading message
+        const loadingText = loading.querySelector('p');
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
         
         loading.classList.remove('hidden');
         error.classList.add('hidden');
@@ -228,37 +244,13 @@ class SearchResultsUI {
         
         try {
             if (window.scuba && window.scuba.searchEngineManager) {
-                // Start all searches simultaneously for instant tab switching
-                const searchPromises = [
-                    // General search (All tab)
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true }),
-                    // Images search
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'images' }),
-                    // Videos search  
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'videos' }),
-                    // News search
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'news' }),
-                    // Maps search
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'map' }),
-                    // Music search
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'music' }),
-                    // IT search
-                    window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true, category: 'it' }),
-                ];
+                // Only load the general search initially for faster loading
+                console.log('🚀 Loading general search results...');
                 
-                console.log('🚀 Starting parallel search across all 7 categories...');
+                const generalResults = await window.scuba.searchEngineManager.handleSearchRequest(query, { returnResults: true });
                 
-                // Wait for all searches to complete
-                const [generalResults, imageResults, videoResults, newsResults, mapResults, musicResults, itResults] = await Promise.all(searchPromises);
-                
-                // Cache all results immediately
+                // Cache the general results
                 this.categoryResults.set('general', generalResults);
-                this.categoryResults.set('images', imageResults);
-                this.categoryResults.set('videos', videoResults);
-                this.categoryResults.set('news', newsResults);
-                this.categoryResults.set('map', mapResults);
-                this.categoryResults.set('music', musicResults);
-                this.categoryResults.set('it', itResults);
                 
                 // Hide loading screen
                 if (window.scuba && window.scuba.loadingManager) {
@@ -267,10 +259,10 @@ class SearchResultsUI {
                     this.hideLoading();
                 }
                 
-                // Display the general results by default
-                this.displayResults(generalResults, query);
+                        // Display the general results using the caching system
+        this.displayResults(generalResults, query);
                 
-                console.log('✅ All 7 search categories loaded and cached for instant switching!');
+                console.log('✅ General search results loaded! Other categories will load on-demand.');
             } else {
                 throw new Error('SearchEngineManager not available');
             }
@@ -290,6 +282,13 @@ class SearchResultsUI {
         this.hideLoading();
         this.currentResults = results;
         this.currentQuery = query;
+        this.hasSearched = true; // Mark this tab as having searched
+        
+        // Update tab title to reflect the search query
+        this.updateTabTitle(query);
+        
+        // Clear processed results cache for new search
+        this.processedResults.clear();
         
         // Store results for general category
         this.categoryResults.set('general', results);
@@ -304,8 +303,8 @@ class SearchResultsUI {
             searchEngines.textContent = `from ${results.engines.join(', ')}`;
         }
         
-        // Display results for current category
-        this.displayGeneralResults(results);
+        // Display results for current category using the caching system
+        this.displayCategoryResults('general');
 
         // Add suggestions if available
         if (results.suggestions && results.suggestions.length > 0) {
@@ -588,6 +587,33 @@ class SearchResultsUI {
         return text.substring(0, maxLength).replace(/\s+\S*$/, '') + '...';
     }
 
+    updateTabTitle(query) {
+        // Update tab title to show search query
+        if (window.scuba && window.scuba.tabManager && this.tabId) {
+            const truncatedQuery = this.truncateText(query, 30); // Limit title length
+            window.scuba.tabManager.updateTabTitle(this.tabId, truncatedQuery);
+            
+            // Also update window title if this is the active tab
+            const activeTab = window.scuba.tabManager.getActiveTab();
+            if (activeTab && activeTab.id === this.tabId) {
+                document.title = `${truncatedQuery} - Scuba`;
+            }
+        }
+    }
+
+    resetTabTitle() {
+        // Reset tab title to "New Tab" when no search has been performed
+        if (window.scuba && window.scuba.tabManager && this.tabId) {
+            window.scuba.tabManager.updateTabTitle(this.tabId, 'New Tab');
+            
+            // Also update window title if this is the active tab
+            const activeTab = window.scuba.tabManager.getActiveTab();
+            if (activeTab && activeTab.id === this.tabId) {
+                document.title = 'Scuba';
+            }
+        }
+    }
+
     // Public API
     search(query) {
         this.performSearch(query);
@@ -612,8 +638,12 @@ class SearchResultsUI {
 
     // Switch between search categories - NOW INSTANT!
     switchCategory(category) {
-        if (category === this.currentCategory) return;
+        if (category === this.currentCategory) {
+            console.log(`⚠️ Already on category '${category}' - no switch needed`);
+            return;
+        }
         
+        console.log(`🔄 Switching from '${this.currentCategory}' to '${category}'`);
         this.currentCategory = category;
         
         // Update active tab styling with smooth transition
@@ -631,23 +661,36 @@ class SearchResultsUI {
             }
         });
         
-        // Results should already be cached - instant display!
+        // Check if category is already cached for instant display
         if (this.categoryResults.has(category)) {
+            console.log(`✅ Category '${category}' already cached, displaying instantly`);
             this.displayCategoryResults(category);
         } else {
-            console.warn(`Category ${category} not preloaded, loading now...`);
-            this.searchCategory(this.currentQuery, category);
+            console.log(`🔄 Loading '${category}' category on-demand...`);
+            
+            // Add loading state to the tab
+            const activeTab = this.resultsContainer.querySelector(`.category-tab[data-category="${category}"]`);
+            if (activeTab) {
+                activeTab.classList.add('loading');
+                // Remove loading state after search completes, regardless of current tab
+                this.searchCategory(this.currentQuery, category).then(() => {
+                    // Always remove loading state from the tab that was loading
+                    activeTab.classList.remove('loading');
+                }).catch(() => {
+                    // Always remove loading state on error
+                    activeTab.classList.remove('loading');
+                });
+            } else {
+                this.searchCategory(this.currentQuery, category);
+            }
         }
     }
 
     // Search specific category (fallback for missing categories)
     async searchCategory(query, category) {
-        // Use main loading screen for consistency
-        if (window.scuba && window.scuba.loadingManager) {
-            window.scuba.loadingManager.show(`Loading ${category} results...`);
-        } else {
-            this.showLoading();
-        }
+        // Use local loading for category switches (only in results area)
+        const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+        this.showLoading(`Loading ${categoryName} results...`);
         
         try {
             if (window.scuba && window.scuba.searchEngineManager) {
@@ -660,24 +703,27 @@ class SearchResultsUI {
                 // Cache results for this category
                 this.categoryResults.set(category, results);
                 
-                // Hide loading screen
-                if (window.scuba && window.scuba.loadingManager) {
-                    window.scuba.loadingManager.hide();
+                // Only display results if user is still on this category tab
+                // This prevents race conditions when switching tabs during loading
+                if (this.currentCategory === category && this.isVisible) {
+                    console.log(`✅ Category '${category}' loaded and user is still on this tab - displaying results`);
+                    this.hideLoading();
+                    this.displayCategoryResults(category);
                 } else {
+                    console.log(`⚠️ Category '${category}' loaded but user switched to '${this.currentCategory}' - results cached but not displayed`);
                     this.hideLoading();
                 }
-                
-                this.displayCategoryResults(category);
             }
         } catch (error) {
             console.error('Category search failed:', error);
             
-            // Hide loading screen on error
-            if (window.scuba && window.scuba.loadingManager) {
-                window.scuba.loadingManager.hide();
+            // Only show error if user is still on this category and this tab is visible
+            if (this.currentCategory === category && this.isVisible) {
+                this.hideLoading();
+                this.showError();
+            } else {
+                this.hideLoading();
             }
-            
-            this.showError();
         }
     }
 
@@ -691,11 +737,39 @@ class SearchResultsUI {
         // Get the grid container
         const grid = this.resultsContainer.querySelector('.search-results-grid');
         
+        // Check if we have processed results cached
+        console.log(`🔍 Checking cache for category '${category}' in tab ${this.tabId}`);
+        console.log(`📊 Cache has ${this.processedResults.size} categories: [${Array.from(this.processedResults.keys()).join(', ')}]`);
+        
+        if (this.processedResults.has(category)) {
+            console.log(`✅ Using cached processed results for category '${category}' in tab ${this.tabId}`);
+            // Use cached processed HTML - no reprocessing!
+            const cachedHTML = this.processedResults.get(category);
+            
+            // Smooth fade out current results
+            grid.style.opacity = '0';
+            grid.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                grid.innerHTML = cachedHTML.html;
+                grid.className = cachedHTML.className;
+                
+                // Smooth fade in cached results
+                requestAnimationFrame(() => {
+                    grid.style.opacity = '1';
+                    grid.style.transform = 'translateY(0)';
+                });
+            }, 100);
+            return;
+        }
+        
+        console.log(`🔄 Processing and caching results for category '${category}' in tab ${this.tabId}`);
+        
         // Smooth fade out current results
         grid.style.opacity = '0';
         grid.style.transform = 'translateY(10px)';
         
-        // After fade out, change content and fade in
+        // After fade out, process and cache results
         setTimeout(() => {
             // Clear existing results
             grid.innerHTML = '';
@@ -708,6 +782,12 @@ class SearchResultsUI {
             } else {
                 this.displayGeneralResults(results);
             }
+            
+            // Cache the processed HTML for instant future display
+            this.processedResults.set(category, {
+                html: grid.innerHTML,
+                className: grid.className
+            });
             
             // Smooth fade in new results
             requestAnimationFrame(() => {
@@ -792,10 +872,82 @@ class SearchResultsUI {
             // Limit to top 15 unique results
             .slice(0, 15);
         
-        qualityResults.forEach((result, index) => {
-            const card = this.createResultCard(result, index);
+        // Separate Wikipedia results for priority display
+        const wikipediaResult = this.findWikipediaResult(qualityResults);
+        const otherResults = qualityResults.filter(result => !this.isWikipediaResult(result));
+        
+        // Add Wikipedia card first if available
+        if (wikipediaResult) {
+            const wikipediaCard = this.createWikipediaCard(wikipediaResult);
+            grid.appendChild(wikipediaCard);
+        }
+        
+        // Add other results
+        otherResults.forEach((result, index) => {
+            const card = this.createResultCard(result, index + (wikipediaResult ? 1 : 0));
             grid.appendChild(card);
         });
+    }
+
+    // Check if a result is from Wikipedia
+    isWikipediaResult(result) {
+        if (!result || !result.url) return false;
+        
+        const url = result.url.toLowerCase();
+        return url.includes('wikipedia.org') || 
+               (result.engine && result.engine.toLowerCase().includes('wikipedia'));
+    }
+    
+    // Find the best Wikipedia result from the results array
+    findWikipediaResult(results) {
+        return results.find(result => this.isWikipediaResult(result));
+    }
+    
+    // Create a special Wikipedia card with enhanced styling
+    createWikipediaCard(result) {
+        const card = document.createElement('div');
+        card.className = 'search-result-card wikipedia-card';
+        
+        const favicon = this.getFavicon(result.url);
+        const domain = this.extractDomain(result.url);
+        const highlightedTitle = this.highlightQuery(result.title, this.currentQuery);
+        const highlightedDescription = this.highlightQuery(
+            this.truncateText(result.description, 200), 
+            this.currentQuery
+        );
+        
+        card.innerHTML = `
+            <div class="wikipedia-header">
+                <div class="wikipedia-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 22h20L12 2z"/>
+                        <path d="M12 6v10"/>
+                        <path d="M8 14l8-8"/>
+                        <path d="M16 14l-8-8"/>
+                    </svg>
+                    <span>Wikipedia</span>
+                </div>
+                <div class="result-source">
+                    <img src="${favicon}" alt="${domain}" class="favicon" onerror="this.style.display='none'">
+                    <span class="domain">${domain}</span>
+                </div>
+            </div>
+            <h3 class="result-title">${highlightedTitle}</h3>
+            <p class="result-description">${highlightedDescription}</p>
+        `;
+        
+        card.addEventListener('click', () => {
+            if (this.tabId && window.webviewManager) {
+                window.webviewManager.loadURL(this.tabId, result.url);
+            } else {
+                window.open(result.url, '_blank', 'noopener,noreferrer');
+            }
+        });
+        
+        // Add enhanced animation delay for Wikipedia card
+        card.style.animationDelay = '0.1s';
+        
+        return card;
     }
 
     // Check if a result is unique compared to previous results
