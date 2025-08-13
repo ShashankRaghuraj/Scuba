@@ -69,11 +69,9 @@ class WebviewManager {
 
         // Load URL if provided - optimized timing
         if (url) {
-            // Use requestAnimationFrame for better performance
+            // Immediate loading for better performance
             requestAnimationFrame(() => {
-                setTimeout(() => {
-                    this.navigateWebview(tabId, url);
-                }, 100); // Reduced timeout for faster loading
+                this.navigateWebview(tabId, url);
             });
         }
 
@@ -82,10 +80,14 @@ class WebviewManager {
 
     configureWebview(webview) {
         webview.setAttribute('enableremotemodule', 'false');
-        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false');
+        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true');
         webview.setAttribute('useragent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Scuba/1.0.0');
         webview.setAttribute('disablewebsecurity', 'true');
         webview.setAttribute('allowpopups', 'true');
+        webview.setAttribute('preload', '');
+        webview.setAttribute('httpreferrer', '');
+        webview.setAttribute('useragentoverride', '');
+        webview.setAttribute('webpreferences', 'experimentalFeatures=true,v8CacheOptions=code,backgroundThrottling=false,accelerated2dCanvas=true,acceleratedVideoDecode=true,acceleratedVideoEncode=true,acceleratedJpegDecode=true,acceleratedPngDecode=true,acceleratedWebpDecode=true,acceleratedMpeg4Decode=true,acceleratedH264Decode=true,acceleratedHevcDecode=true,acceleratedVp8Decode=true,acceleratedVp9Decode=true,acceleratedAv1Decode=true,acceleratedMpeg4Encode=true,acceleratedH264Encode=true,acceleratedHevcEncode=true,acceleratedVp8Encode=true,acceleratedVp9Encode=true,acceleratedAv1Encode=true,acceleratedJpegEncode=true,acceleratedPngEncode=true,acceleratedWebpEncode=true');
     }
 
     applyWebviewStyles(webview) {
@@ -251,14 +253,12 @@ class WebviewManager {
 
         // Optimized DOM attachment detection
         if (document.body.contains(webview)) {
-            // Use requestAnimationFrame for smoother timing
-            requestAnimationFrame(() => {
-                setTimeout(attemptLoad, 50);
-            });
+            // Immediate loading for better performance
+            requestAnimationFrame(attemptLoad);
         } else {
-            // Wait for DOM attachment
+            // Wait for DOM attachment with minimal delay
             console.log('WebviewManager: Webview not yet attached to DOM, waiting...');
-            setTimeout(attemptLoad, 100);
+            setTimeout(attemptLoad, 25);
         }
     }
 

@@ -31,8 +31,8 @@ class TabManager {
                 }
             });
 
-            // Setup simplified drag and drop
-            this.setupSimpleDragDrop(tabsContainer);
+            // Setup improved drag and drop with click detection
+            this.setupImprovedDragDrop(tabsContainer);
         }
     }
 
@@ -180,14 +180,20 @@ class TabManager {
         });
     }
 
-    // Super Simple Drag and Drop Implementation
-    setupSimpleDragDrop(container) {
-        console.log('Setting up simple drag and drop');
+    // Improved Drag and Drop Implementation with Click Detection
+    setupImprovedDragDrop(container) {
+        console.log('Setting up improved drag and drop');
         
-        // Simple drag state
+        // Drag state
         this.isDragging = false;
         this.draggedTab = null;
+        this.dragClone = null;
+        this.currentDropIndicator = null;
         this.dragStartIndex = -1;
+        this.dragStartTime = 0;
+        this.dragStartPos = { x: 0, y: 0 };
+        this.clickThreshold = 5; // pixels
+        this.dragDelay = 150; // milliseconds
 
         // Add drag to existing tabs
         this.enableDragOnAllTabs();
@@ -200,7 +206,21 @@ class TabManager {
 
         // Global mouse handlers
         document.addEventListener('mousemove', (e) => this.handleMouseMove(e, container));
-        document.addEventListener('mouseup', () => this.handleMouseUp(container));
+        document.addEventListener('mouseup', (e) => this.handleMouseUp(e, container));
+        
+        // Handle window blur to cancel drag operations
+        window.addEventListener('blur', () => {
+            if (this.isDragging) {
+                this.cancelDrag();
+            }
+        });
+        
+        // Handle escape key to cancel drag
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isDragging) {
+                this.cancelDrag();
+            }
+        });
     }
 
     enableDragOnAllTabs() {
@@ -233,69 +253,128 @@ class TabManager {
     startDrag(tabElement, e) {
         if (this.isDragging) return;
         
-        this.isDragging = true;
-        this.draggedTab = tabElement;
+        // Record start position and time
+        this.dragStartTime = Date.now();
+        this.dragStartPos = { x: e.clientX, y: e.clientY };
         
         // Get current position in tab list
         const tabs = Array.from(tabElement.parentElement.children).filter(el => el.classList.contains('tab'));
         this.dragStartIndex = tabs.indexOf(tabElement);
         
-        // Style the dragged tab
-        tabElement.classList.add('dragging');
-        tabElement.style.cursor = 'grabbing';
-        tabElement.style.position = 'fixed';
-        tabElement.style.zIndex = '9999';
-        tabElement.style.pointerEvents = 'none';
+        // Don't start dragging immediately - wait for movement or time threshold
+        this.draggedTab = tabElement;
         
-        // Position tab at mouse cursor (centered)
-        const rect = tabElement.getBoundingClientRect();
-        tabElement.style.left = (e.clientX - rect.width / 2) + 'px';
-        tabElement.style.top = (e.clientY - rect.height / 2) + 'px';
-        
-        console.log('Started dragging tab at index', this.dragStartIndex);
+        console.log('Mouse down on tab at index', this.dragStartIndex);
     }
 
     handleMouseMove(e, container) {
-        if (!this.isDragging || !this.draggedTab) return;
+        if (!this.draggedTab) return;
         
-        // Move tab with mouse (centered on cursor)
-        const rect = this.draggedTab.getBoundingClientRect();
-        this.draggedTab.style.left = (e.clientX - rect.width / 2) + 'px';
-        this.draggedTab.style.top = (e.clientY - rect.height / 2) + 'px';
-        
-        // Find insertion point
-        const tabs = Array.from(container.children).filter(el => el.classList.contains('tab') && el !== this.draggedTab);
-        let insertIndex = tabs.length;
-        
-        for (let i = 0; i < tabs.length; i++) {
-            const tabRect = tabs[i].getBoundingClientRect();
-            if (e.clientX < tabRect.left + tabRect.width / 2) {
-                insertIndex = i;
-                break;
+        // Check if we should start dragging
+        if (!this.isDragging) {
+            const deltaX = Math.abs(e.clientX - this.dragStartPos.x);
+            const deltaY = Math.abs(e.clientY - this.dragStartPos.y);
+            const timeElapsed = Date.now() - this.dragStartTime;
+            
+            // Start dragging if mouse moved enough or enough time passed
+            if (deltaX > this.clickThreshold || deltaY > this.clickThreshold || timeElapsed > this.dragDelay) {
+                this.beginDrag();
             }
+            return;
         }
         
-        // Move tab in DOM if position changed
-        if (insertIndex === 0) {
-            container.insertBefore(this.draggedTab, container.firstChild);
-        } else if (insertIndex >= tabs.length) {
-            container.appendChild(this.draggedTab);
-        } else {
-            container.insertBefore(this.draggedTab, tabs[insertIndex]);
+        // Move clone with mouse (centered on cursor)
+        if (this.dragClone) {
+            const rect = this.draggedTab.getBoundingClientRect();
+            this.dragClone.style.left = (e.clientX - rect.width / 2) + 'px';
+            this.dragClone.style.top = (e.clientY - rect.height / 2) + 'px';
+        }
+        
+        // Find insertion point and show drop indicator
+        try {
+            const tabs = Array.from(container.children).filter(el => el.classList.contains('tab') && el !== this.draggedTab);
+            let insertIndex = tabs.length;
+            let dropTarget = null;
+            
+            for (let i = 0; i < tabs.length; i++) {
+                const tabRect = tabs[i].getBoundingClientRect();
+                if (e.clientX < tabRect.left + tabRect.width / 2) {
+                    insertIndex = i;
+                    dropTarget = tabs[i];
+                    break;
+                }
+            }
+            
+            // Show drop indicator
+            this.showDropIndicator(container, insertIndex, dropTarget);
+            
+            // Move tab in DOM if position changed
+            if (insertIndex === 0) {
+                container.insertBefore(this.draggedTab, container.firstChild);
+            } else if (insertIndex >= tabs.length) {
+                container.appendChild(this.draggedTab);
+            } else {
+                container.insertBefore(this.draggedTab, tabs[insertIndex]);
+            }
+        } catch (error) {
+            console.error('Error during drag operation:', error);
         }
     }
 
-    handleMouseUp(container) {
-        if (!this.isDragging || !this.draggedTab) return;
+    beginDrag() {
+        if (this.isDragging) return;
         
-        // Reset styles
+        this.isDragging = true;
+        console.log('Started dragging tab at index', this.dragStartIndex);
+        
+        // Create a clone for dragging that follows the mouse
+        this.dragClone = this.draggedTab.cloneNode(true);
+        this.dragClone.classList.add('drag-clone');
+        this.dragClone.style.position = 'fixed';
+        this.dragClone.style.zIndex = '9999';
+        this.dragClone.style.pointerEvents = 'none';
+        this.dragClone.style.opacity = '0.8';
+        this.dragClone.style.transform = 'rotate(2deg) scale(1.02)';
+        this.dragClone.style.boxShadow = '0 8px 25px rgba(140, 156, 227, 0.3)';
+        
+        // Add the clone to the body
+        document.body.appendChild(this.dragClone);
+        
+        // Style the original tab (make it semi-transparent but keep it in place)
+        this.draggedTab.classList.add('dragging');
+        this.draggedTab.style.cursor = 'grabbing';
+        this.draggedTab.style.opacity = '0.3';
+        
+        // Position clone at mouse cursor (centered)
+        const rect = this.draggedTab.getBoundingClientRect();
+        this.dragClone.style.left = (this.dragStartPos.x - rect.width / 2) + 'px';
+        this.dragClone.style.top = (this.dragStartPos.y - rect.height / 2) + 'px';
+    }
+
+    handleMouseUp(e, container) {
+        if (!this.draggedTab) return;
+        
+        // If we never started dragging, this was a click
+        if (!this.isDragging) {
+            const tabId = parseInt(this.draggedTab.dataset.tabId);
+            this.switchToTab(tabId);
+            this.draggedTab = null;
+            return;
+        }
+        
+        // Remove drag clone
+        if (this.dragClone) {
+            this.dragClone.remove();
+            this.dragClone = null;
+        }
+        
+        // Remove drop indicators
+        this.removeDropIndicators();
+        
+        // Reset original tab styles
         this.draggedTab.classList.remove('dragging');
         this.draggedTab.style.cursor = 'grab';
-        this.draggedTab.style.position = '';
-        this.draggedTab.style.left = '';
-        this.draggedTab.style.top = '';
-        this.draggedTab.style.zIndex = '';
-        this.draggedTab.style.pointerEvents = '';
+        this.draggedTab.style.opacity = '';
         
         // Log final order
         const tabs = Array.from(container.children).filter(el => el.classList.contains('tab'));
@@ -305,7 +384,89 @@ class TabManager {
         // Clean up
         this.isDragging = false;
         this.draggedTab = null;
+        this.dragClone = null;
+        this.currentDropIndicator = null;
         this.dragStartIndex = -1;
+        this.dragStartTime = 0;
+        this.dragStartPos = { x: 0, y: 0 };
+    }
+
+    showDropIndicator(container, insertIndex, dropTarget) {
+        // Remove existing drop indicators
+        this.removeDropIndicators();
+        
+        // Create drop indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'drop-indicator';
+        indicator.style.cssText = `
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 1px;
+            z-index: 1000;
+            pointer-events: none;
+            transition: all 0.15s ease;
+        `;
+        
+        if (insertIndex === 0) {
+            // Place at the beginning
+            indicator.style.left = '0px';
+            indicator.style.width = '4px';
+            container.insertBefore(indicator, container.firstChild);
+        } else if (dropTarget) {
+            // Place before the target tab
+            const targetRect = dropTarget.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            indicator.style.left = (targetRect.left - containerRect.left - 2) + 'px';
+            indicator.style.width = '4px';
+            container.insertBefore(indicator, dropTarget);
+        } else {
+            // Place at the end
+            indicator.style.left = (container.scrollWidth - 4) + 'px';
+            indicator.style.width = '4px';
+            container.appendChild(indicator);
+        }
+        
+        this.currentDropIndicator = indicator;
+    }
+    
+    removeDropIndicators() {
+        if (this.currentDropIndicator) {
+            this.currentDropIndicator.remove();
+            this.currentDropIndicator = null;
+        }
+        
+        // Also remove any other drop indicators that might exist
+        document.querySelectorAll('.drop-indicator').forEach(indicator => indicator.remove());
+    }
+    
+    cancelDrag() {
+        if (!this.isDragging) return;
+        
+        console.log('Cancelling drag operation');
+        
+        // Remove drag clone
+        if (this.dragClone) {
+            this.dragClone.remove();
+            this.dragClone = null;
+        }
+        
+        // Remove drop indicators
+        this.removeDropIndicators();
+        
+        // Reset original tab styles
+        if (this.draggedTab) {
+            this.draggedTab.classList.remove('dragging');
+            this.draggedTab.style.cursor = 'grab';
+            this.draggedTab.style.opacity = '';
+        }
+        
+        // Clean up
+        this.isDragging = false;
+        this.draggedTab = null;
+        this.dragStartIndex = -1;
+        this.dragStartTime = 0;
+        this.dragStartPos = { x: 0, y: 0 };
     }
 
     getDragAfterElement(container, x) {

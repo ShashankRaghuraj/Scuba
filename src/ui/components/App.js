@@ -8,6 +8,7 @@ class App {
         this.navigationBar = null;
         this.uiManager = null;
         this.loadingManager = null;
+        this.performanceMonitor = null;
         
         this.isInitialized = false;
         this.init();
@@ -32,6 +33,10 @@ class App {
             
             this.loadingManager = new LoadingManager();
             console.log('LoadingManager initialized');
+
+            // Initialize performance monitor
+            this.performanceMonitor = new PerformanceMonitor();
+            console.log('PerformanceMonitor initialized');
 
             // Connect loading manager to webview manager
             this.webviewManager.setLoadingManager(this.loadingManager);
@@ -91,6 +96,11 @@ class App {
         this.tabManager.on('tab-created', (data) => {
             // TabManager and WebviewManager communicate directly
             // App can listen for additional coordination if needed
+            
+            // Optimize performance after tab creation
+            if (this.performanceMonitor) {
+                this.performanceMonitor.optimizeTabSwitching();
+            }
         });
 
         this.tabManager.on('tab-switched', (data) => {
@@ -293,8 +303,10 @@ class App {
                 webviewManager: !!this.webviewManager,
                 navigationBar: !!this.navigationBar,
                 uiManager: !!this.uiManager,
-                loadingManager: !!this.loadingManager
-            }
+                loadingManager: !!this.loadingManager,
+                performanceMonitor: !!this.performanceMonitor
+            },
+            performance: this.performanceMonitor?.exportMetrics() || null
         };
     }
 

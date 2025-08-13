@@ -33,7 +33,14 @@ function createWindow() {
       // Preload optimizations
       preload: path.join(__dirname, 'ui', 'preload.js'),
       // Enable webview
-      webviewTag: true
+      webviewTag: true,
+      // Additional performance optimizations
+      enableWebCodecs: true,
+      enableBlinkFeatures: 'WebCodecs,WebGPU,WebAssemblyStreaming',
+      // Memory management
+      maxActiveWebContents: 10,
+      // Rendering optimizations
+      enableAcceleratedLayers: true
     },
     titleBarStyle: 'hiddenInset', // Clean title bar on macOS
     frame: process.platform !== 'darwin', // Frameless on macOS

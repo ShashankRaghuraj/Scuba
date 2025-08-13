@@ -95,10 +95,10 @@ class LoadingManager {
     }
     
     startMessageRotation() {
-        // Change message every 2 seconds (faster rotation)
+        // Change message every 1.5 seconds (faster rotation)
         this.messageInterval = setInterval(() => {
             this.rotateMessage();
-        }, 2000);
+        }, 1500);
     }
     
     stopMessageRotation() {
@@ -141,7 +141,7 @@ class LoadingManager {
             // Fade in new message (faster transition)
             this.messageElement.style.opacity = '1';
             this.messageElement.style.transform = 'translateY(0)';
-        }, 200); // Reduced from 300ms to 200ms
+        }, 150); // Reduced from 200ms to 150ms
     }
     
     addPenguinVariety() {
