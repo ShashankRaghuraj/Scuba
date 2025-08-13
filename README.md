@@ -1,4 +1,5 @@
-# 🐧 Scuba Browser [0 -> 1 project, this is still in very very very very very very very early stages (very)]
+# 🐧 Scuba Browser
+0 -> 1 project, this is still in very very very very very very very early stages (very)]
 
 Shashank's Cool Browser, The Browser... the Movie? No just the Browser...
 
