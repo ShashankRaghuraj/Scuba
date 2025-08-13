@@ -6,7 +6,6 @@ Shashank's Cool Browser, The Browser... the Movie? No just the Browser...
 
 - **🔒 Security-First**: Enterprise-grade security with context isolation and XSS protection
 - **🚀 High Performance**: Optimized for speed with intelligent caching and resource management
-- **🔍 Private Search**: Integrated SearXNG for privacy-focused search
 - **🎨 Clean UI**: Minimalistic design with smooth animations
 - **📱 Modern Architecture**: Component-based design with proper separation of concerns
 
@@ -198,4 +197,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**🐧 Made with ❤️ by Shashank** | **🔒 Security-First** | **⚡ Performance-Optimized**
+**Made with 🐧 by Shashank**
